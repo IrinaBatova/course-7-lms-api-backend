@@ -1,0 +1,40 @@
+# --- Системные файлы Windows и macOS ---
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# --- Настройки PyCharm (IDE) ---
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# --- Виртуальное окружение (Важно!) ---
+.venv/
+venv/
+ENV/
+env/
+python/
+
+# --- Кэш Python ---
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# --- База данных Django (Не должна попасть на GitHub!) ---
+*.sqlite3
+
+# --- Файлы медиа и статики (Загружаемые картинки товаров) ---
+/media/
+/staticfiles/
+
+# --- Файлы окружения с секретными ключами и паролями ---
+.env
+*.env
+
+# --- Локальные файлы bootstrap
+catalog/static/catalog/css/bootstrap.min.css
+catalog/static/catalog/js/bootstrap.bundle.min.js
+/static

@@ -1,0 +1,47 @@
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.develop.dependencies]
+ruff = "^0.17.1"
+
+[project]
+name = "course-7-lms-api-backend"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Irina Batova",email = "BatIr_74_2@mail.ru"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "django (>=6.1.2,<7.0.0)",
+    "djangorestframework (>=3.18.3,<4.0.0)",
+    "python-dotenv (>=1.2.4,<2.0.0)",
+    "psycopg[binary] (>=3.3.6,<4.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "DJ", "B", "C4"]
+ignore = []
+
+[tool.ruff.lint.isort]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+known-first-party = ["config"] # Если ваша главная папка с settings.py называется по-другому, укажите её имя вместо config
+
+[tool.ruff.lint.per-file-ignores]
+"**/migrations/*" = ["E501", "N806"]
+"settings.py" = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
