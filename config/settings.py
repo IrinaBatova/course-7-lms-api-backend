@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'lms',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -134,3 +136,6 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+# Переключение с встроенного (базового) User из django.contrib.auth.models на кастомного User в приложении проекта Users
+AUTH_USER_MODEL = 'users.User'
