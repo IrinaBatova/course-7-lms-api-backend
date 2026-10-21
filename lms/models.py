@@ -4,6 +4,10 @@ class Course (models.Model):
     """
     Модель Курс
     """
+
+    # Подсказываем PyCharm, что у модели есть менеджер objects
+    objects = models.Manager()
+
     title = models.CharField(
         max_length=150,
         unique=True,
@@ -32,6 +36,10 @@ class Lesson (models.Model):
     """
     Модель Урок
     """
+
+    # Подсказываем PyCharm, что у модели есть менеджер objects
+    objects = models.Manager()
+
     title = models.CharField(
         max_length=150,
         unique=True,
