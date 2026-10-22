@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, UserManager
 
+from django.conf import settings
+from lms.models import Course, Lesson
+
 
 # Создаем кастомный менеджер, который умеет создавать суперпользователя БЕЗ username
 class CustomUserManager(UserManager):
@@ -90,3 +93,75 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+class Payment(models.Model):
+    """Модель платежи пользователя"""
+
+    # Подсказываем PyCharm, что у модели есть менеджер objects
+    objects = models.Manager()
+
+    # Варианты способов оплаты (константы класса)
+    CASH = 'cash'
+    TRANSFER = 'transfer'
+
+    # Список кортежей для создания выпадающего списка (CHOICES) в панели администратора
+    PAYMENT_METHOD_CHOICES = [
+        (CASH, 'Наличные'),
+        (TRANSFER, 'Перевод на счет'),
+    ]
+
+    # Ссылки на другие модели (ForeignKey)
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name='Пользователь',
+        related_name='payments',  # переименовываем техническое имя связи (по умолчанию payment_set)
+    )
+
+    paid_course = models.ForeignKey(
+        Course,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        verbose_name='Оплаченный курс',
+        related_name='payments',
+    )
+
+    paid_lesson = models.ForeignKey(
+        Lesson,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        verbose_name='Оплаченный урок',
+        related_name='payments',
+    )
+
+    # Остальные поля платежа
+
+    payment_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата оплаты',
+    )
+
+    amount = models.DecimalField(
+        max_length=10,
+        decimal_places=2,
+        max_digits=10,
+        verbose_name='Сумма оплаты'
+    )
+
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHOD_CHOICES,
+        default=TRANSFER,
+        verbose_name='Способ оплаты'
+    )
+
+    class Meta:
+        verbose_name = 'Платеж'
+        verbose_name_plural = 'Платежи'
+        ordering = ('-payment_date',)
+
+    def __str__(self):
+        return f'{self.user} - {self.amount} ({self.payment_method})'
