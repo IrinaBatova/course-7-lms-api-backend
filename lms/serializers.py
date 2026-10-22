@@ -19,12 +19,17 @@ class CourseSerializer(serializers.ModelSerializer):
     и после проверки (валидация) обратно в Python (десериализация).
     """
 
-    # Объявляем вычисляемое поле
+    # Объявляем вычисляемое поле (счетчик уроков)
     lessons_count = serializers.SerializerMethodField()
+
+    # Вложенный сериализатор (список уроков). Имя переменной должно строго совпадать
+    # с related_name='lessons' из модели Lesson
+    lessons = LessonSerializer(many=True, read_only=True)
 
     class Meta:
         model = Course
-        fields = ('id', 'title', 'description', 'preview', 'lessons_count')
+        # Добавляем 'lessons' в список выводимых полей
+        fields = ('id', 'title', 'description', 'preview', 'lessons_count', 'lessons')
 
     # Пишем метод для вычисления значения поля
     def get_lessons_count(self, obj):
