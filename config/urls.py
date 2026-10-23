@@ -10,4 +10,6 @@ urlpatterns = [
     path('admin/', admin.site.urls), # admin.site.urls это встроенный в Django набор маршрутов
     # Маршруты для приложения 'lms', подключаются URL-адреса эндпоинтов приложения lms
     path('lms/', include('lms.urls', namespace='lms')),
+    # Маршруты для приложения 'users', подключаются URL-адреса эндпоинтов приложения users
+    path('users/', include('users.urls', namespace='users')),
 ]

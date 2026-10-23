@@ -67,7 +67,7 @@ class Lesson (models.Model):
     course = models.ForeignKey(
         Course, # целевая модель
         on_delete=models.CASCADE,
-        related_name='lessons', # техническое имя связи
+        related_name='lessons', # переименовываем техническое имя связи (по умолчанию lesson_set)
         verbose_name="Курс"     # текст для интерфейса
     )
 
