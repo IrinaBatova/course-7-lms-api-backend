@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -140,3 +141,17 @@ MAILERS = {
 
 # Переключение с встроенного (базового) User из django.contrib.auth.models на кастомного User в приложении проекта Users
 AUTH_USER_MODEL = 'users.User'
+
+# Переключение с встроенной (базовой) системы сессий Django на JWT (JSON Web Tokens)
+# Это указывает Django REST Framework проверять каждый входящий запрос на наличие токена в заголовках
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
+
+# Дополнительные настройки времени жизни токенов (опционально, но полезно)
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60), #  короткий рабочий ключ
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1), # долгосрочный ключ обновления сессии
+}

@@ -12,7 +12,6 @@ from lms.views import (
 
 # Задаем имя приложения для системы путей Django
 app_name = LmsConfig.name
-# app_name = 'lms'
 
 # Создаем роутер DRF и регистрируем в нем контроллер для Курсов
 router = DefaultRouter()
