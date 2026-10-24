@@ -3,12 +3,11 @@ from rest_framework import permissions
 
 class IsModer(permissions.BasePermission):
     """
-    Проверяет, входит ли пользователь в группу 'Модераторы'.
+    Проверяет пользователь: авторизован, входит в группу "Модераторы".
     """
 
     def has_permission(self, request, view):
         """
-        Метод проверяет пользователь: авторизован, входит в группу "Модераторы"
         Возвращает `True`, если разрешение предоставлено, `False` в противном случае.
         """
         # Проверяем, авторизован ли пользователь
@@ -29,3 +28,26 @@ class IsNotModer(permissions.BasePermission):
             return False
         # Для всех остальных пользователей -> возвращаем True (доступ разрешен)
         return True
+
+
+class IsOwner(permissions.BasePermission):
+    """
+    Разрешаем доступ только если владелец объекта — это текущий пользователь
+    """
+    def has_object_permission(self, request, view, obj):
+        return obj.owner == request.user
+
+
+class IsModerOrOwner(permissions.BasePermission):
+    """
+    Разрешает доступ модераторам или владельцам объекта.
+    """
+
+    def has_object_permission(self, request, view, obj):
+        # Проверяем, является ли пользователь модератором
+        if request.user.groups.filter(name='Модераторы').exists():
+            return True
+
+        # Проверяем, является ли пользователь владельцем
+        return obj.owner == request.user
+
