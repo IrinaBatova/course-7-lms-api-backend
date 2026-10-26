@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 
 from lms.models import Course, Lesson, CourseSubscription
+from lms.paginators import CoursePaginator, LessonPaginator
 from lms.serializers import CourseSerializer, LessonSerializer
 from lms.permissions import IsNotModer, IsOwner, IsModerOrOwner
 
@@ -14,6 +15,7 @@ from lms.permissions import IsNotModer, IsOwner, IsModerOrOwner
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    pagination_class = CoursePaginator # пагинацию для курсов
 
     def get_permissions(self):
         """ Метод проверяет разрешения (слой защиты)"""
@@ -67,6 +69,7 @@ class LessonListAPIView(generics.ListAPIView):
     serializer_class = LessonSerializer
     # Модераторы и обычные пользователи могут просматривать список
     permission_classes = [IsAuthenticated]
+    pagination_class = LessonPaginator  # пагинация для уроков
 
     def get_queryset(self):
         # Модератор видит абсолютно всё
