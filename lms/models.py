@@ -1,5 +1,6 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
+
 
 class Course (models.Model):
     """
@@ -73,7 +74,7 @@ class Lesson (models.Model):
 
     # Связь «Один ко многим»: один курс содержит много уроков
     course = models.ForeignKey(
-        Course, # целевая модель
+        'Course', # целевая модель
         on_delete=models.CASCADE,
         related_name='lessons', # переименовываем техническое имя связи (по умолчанию lesson_set)
         verbose_name="Курс"     # текст для интерфейса
@@ -92,3 +93,33 @@ class Lesson (models.Model):
 
     def __str__(self):
         return self.title
+
+class CourseSubscription(models.Model):
+    """
+    Модель подписка на курс
+    """
+
+    # Подсказываем PyCharm, что у модели есть менеджер objects
+    objects = models.Manager()
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='subscriptions', # переименовываем техническое имя связи (по умолчанию coursesubscription_set)
+        verbose_name='Пользователь'
+    )
+
+    course = models.ForeignKey(
+        'course',
+        on_delete=models.CASCADE,
+        related_name='subscriptions', # переименовываем техническое имя связи
+        verbose_name='Курс'
+    )
+
+    class Meta:
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
+        unique_together = ('user', 'course')  # Чтобы нельзя было подписаться дважды
+
+    def __str__(self):
+        return f"{self.user} -> {self.course}"
