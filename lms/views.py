@@ -2,12 +2,13 @@ from rest_framework import viewsets, generics
 from rest_framework.views import APIView
 from rest_framework.response import  Response
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema
 
 from django.shortcuts import get_object_or_404
 
 from lms.models import Course, Lesson, CourseSubscription
 from lms.paginators import CoursePaginator, LessonPaginator
-from lms.serializers import CourseSerializer, LessonSerializer
+from lms.serializers import CourseSerializer, LessonSerializer, CourseSubscriptionSerializer
 from lms.permissions import IsNotModer, IsOwner, IsModerOrOwner
 
 
@@ -102,6 +103,11 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated, IsOwner]
 
 
+@extend_schema(
+    summary="Управление подпиской на курс",
+    description="Позволяет авторизованному пользователю подписаться или отписаться от курса.",
+    responses={200: CourseSubscriptionSerializer}
+)
 class CourseSubscriptionAPIView(APIView):
     """
     Контроллер-переключатель для управления подпиской на курсы.
