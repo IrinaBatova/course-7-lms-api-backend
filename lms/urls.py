@@ -8,7 +8,7 @@ from lms.views import (
     LessonListAPIView,
     LessonUpdateAPIView,
     LessonDestroyAPIView,
-    LessonRetrieveAPIView)
+    LessonRetrieveAPIView, CourseSubscriptionAPIView)
 
 # Задаем имя приложения для системы путей Django
 app_name = LmsConfig.name
@@ -31,4 +31,7 @@ urlpatterns = [
     path('lesson/delete/<int:pk>', LessonDestroyAPIView.as_view(), name='lesson-delete'),
     # Статический маршрут (эндпоинт для получения списка уроков)
     path('lesson/', LessonListAPIView.as_view(), name='lesson-list'),
+    # Статический маршрут (эндпоинт для подписок)
+    path('course/subscribe/', CourseSubscriptionAPIView.as_view(), name='course-subscribe')
+
 ] + router.urls # Прибавляем пути роутера для курсов, которые он сам генерирует

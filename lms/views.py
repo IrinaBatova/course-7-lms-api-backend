@@ -1,7 +1,13 @@
 from rest_framework import viewsets, generics
+from rest_framework.views import APIView
+from rest_framework.response import  Response
 from rest_framework.permissions import IsAuthenticated
-from lms.models import Course, Lesson
-from  lms.serializers import CourseSerializer, LessonSerializer
+
+from django.shortcuts import get_object_or_404
+
+from lms.models import Course, Lesson, CourseSubscription
+from lms.paginators import CoursePaginator, LessonPaginator
+from lms.serializers import CourseSerializer, LessonSerializer
 from lms.permissions import IsNotModer, IsOwner, IsModerOrOwner
 
 
@@ -9,9 +15,11 @@ from lms.permissions import IsNotModer, IsOwner, IsModerOrOwner
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    pagination_class = CoursePaginator # пагинацию для курсов
 
     def get_permissions(self):
-        # Создание курса: модератору нельзя (только обычный пользователь)
+        """ Метод проверяет разрешения (слой защиты)"""
+        # Создание курса: модератору нельзя (только авторизованный пользователь)
         if self.action == 'create':
             self.permission_classes = [IsAuthenticated, IsNotModer]
 
@@ -30,6 +38,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         return [permission() for permission in self.permission_classes]
 
     def get_queryset(self):
+        """Метод возвращает только разрешенные пользователю данные из БД (бизнес-логика)"""
         # Модератор видит все курсы в базе
         if self.request.user.groups.filter(name='Модераторы').exists():
             return Course.objects.all()
@@ -37,6 +46,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         return Course.objects.filter(owner=self.request.user)
 
     def perform_create(self, serializer):
+        """Метод вызывается только если пришел POST-запрос на создание нового курса"""
         # Автоматически сохраняем текущего пользователя как владельца
         serializer.save(owner=self.request.user)
 
@@ -59,6 +69,7 @@ class LessonListAPIView(generics.ListAPIView):
     serializer_class = LessonSerializer
     # Модераторы и обычные пользователи могут просматривать список
     permission_classes = [IsAuthenticated]
+    pagination_class = LessonPaginator  # пагинация для уроков
 
     def get_queryset(self):
         # Модератор видит абсолютно всё
@@ -89,3 +100,35 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
     serializer_class = LessonSerializer
     # Модератор не может удалять уроки
     permission_classes = [IsAuthenticated, IsOwner]
+
+
+class CourseSubscriptionAPIView(APIView):
+    """
+    Контроллер-переключатель для управления подпиской на курсы.
+    """
+    # Подписаться могут только авторизованные пользователи
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+
+        # Достаем ID курса, на который пользователь хочет подписаться, из тела JSON-запроса
+        course_id = request.data.get('course_id')
+
+        # Ищем этот курс в базе. Если курса с таким ID нет — вернется ошибка 404
+        course_item = get_object_or_404(Course, id=course_id)
+
+        # Смотрим, есть ли уже подписка у этого пользователя (request.user) на этот курс (course_item)
+        subs_item = CourseSubscription.objects.filter(user=request.user, course=course_item) # Возвращает QuerySet
+
+        # Переключатель
+        if subs_item.exists(): # Если подписка существует (хотя бы одна запись)
+            subs_item.delete() # Удаляем
+            message = 'Подписка удалена'
+
+        else:
+            # Если подписки нет — создаем новую запись
+            CourseSubscription.objects.create(user=request.user, course=course_item)
+            message = 'Подписка добавлена'
+
+        # Возвращаем понятный ответ для Postman
+        return Response({"message": message})
