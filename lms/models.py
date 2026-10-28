@@ -33,6 +33,10 @@ class Course (models.Model):
         blank=True,
         null=True
     )
+    price = models.PositiveIntegerField(
+        default=1000,
+        verbose_name='Цене курса'
+    )
 
     class Meta:
         verbose_name = 'Курс'
@@ -60,7 +64,6 @@ class Lesson (models.Model):
         null=True,
         verbose_name="Превью (картинка)"
     )
-
     description = models.TextField(
         blank=True,
         null=True,
@@ -71,7 +74,6 @@ class Lesson (models.Model):
         null=True,
         verbose_name="Ссылка на видео"
     )
-
     # Связь «Один ко многим»: один курс содержит много уроков
     course = models.ForeignKey(
         'Course', # целевая модель
@@ -85,6 +87,10 @@ class Lesson (models.Model):
         verbose_name='Владелец',
         blank=True,
         null=True
+    )
+    price = models.PositiveIntegerField(
+        default=500,
+        verbose_name='Цене урока'
     )
 
     class Meta:

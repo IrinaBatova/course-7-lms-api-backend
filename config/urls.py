@@ -14,6 +14,8 @@ urlpatterns = [
     path('lms/', include('lms.urls', namespace='lms')),
     # Маршруты для приложения 'users', подключаются URL-адреса эндпоинтов приложения users
     path('users/', include('users.urls', namespace='users')),
+    # Маршруты для приложения 'payments', подключаются URL-адреса эндпоинтов приложения payments
+    path('payments/', include('payments.urls', namespace='payments')),
 
     # Маршруты для Документации drf-spectacular:
     # Скачивание самого файла схемы (OpenAPI 3.0 в формате yaml)
