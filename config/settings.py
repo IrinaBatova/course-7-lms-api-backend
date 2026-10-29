@@ -44,8 +44,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'django_filters',
+    'drf_spectacular',
     'lms',
     'users',
+    'payments',
 ]
 
 MIDDLEWARE = [
@@ -126,13 +128,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
-
 STATIC_URL = 'static/'
 
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
-
 MAILERS = {
     'default': {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
@@ -142,12 +142,16 @@ MAILERS = {
 # Переключение с встроенного (базового) User из django.contrib.auth.models на кастомного User в приложении проекта Users
 AUTH_USER_MODEL = 'users.User'
 
-# Переключение с встроенной (базовой) системы сессий Django на JWT (JSON Web Tokens)
-# Это указывает Django REST Framework проверять каждый входящий запрос на наличие токена в заголовках
+
+# Блок настроек для самого Django REST Framework, чтобы он знал, кто за что отвечает
 REST_FRAMEWORK = {
+    # Переключение с встроенной (базовой) системы сессий Django на JWT (JSON Web Tokens)
+    # Это указывает DRF проверять каждый входящий запрос на наличие токена в заголовках
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    # Теперь за генерацию схемы для Документации отвечает drf-spectacular
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # Дополнительные настройки времени жизни токенов (опционально, но полезно)
@@ -155,3 +159,13 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60), #  короткий рабочий ключ
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1), # долгосрочный ключ обновления сессии
 }
+
+# Базовые настройки Документации
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Course LMS API Backend',
+    'DESCRIPTION': 'Серверная часть (API) для системы управления обучением (LMS)',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # Другие настройки можно добавить при необходимости
+}
+
