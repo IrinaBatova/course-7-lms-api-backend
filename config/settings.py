@@ -131,13 +131,25 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 
-# Email
+# Настройки Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 MAILERS = {
     'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
+        'BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
+        'OPTIONS': {
+            'host': 'smtp.mail.ru',
+            'port': 465,
+            'use_ssl': True,
+            'username': os.getenv('EMAIL_USER'), # Адрес почтового ящика, берем из .env
+            'password': os.getenv('EMAIL_PASSWORD'), # 16-значный ПАРОЛЬ ПРИЛОЖЕНИЯ без пробелов, берем из .env
+        },
+    }
 }
+
+DEFAULT_FROM_EMAIL = os.getenv('EMAIL_USER') # Должен совпадать с username выше
+
+# Старый формат для обратной совместимости библиотек
+# EMAIL_HOST_USER = os.getenv('EMAIL_USER')
 
 # Переключение с встроенного (базового) User из django.contrib.auth.models на кастомного User в приложении проекта Users
 AUTH_USER_MODEL = 'users.User'

@@ -1,15 +1,21 @@
+from asyncio import timeout
+from  datetime import timedelta
+
+from django.utils import timezone
+from django.shortcuts import get_object_or_404
+
 from rest_framework import viewsets, generics
 from rest_framework.views import APIView
 from rest_framework.response import  Response
 from rest_framework.permissions import IsAuthenticated
-from drf_spectacular.utils import extend_schema
 
-from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
 
 from lms.models import Course, Lesson, CourseSubscription
 from lms.paginators import CoursePaginator, LessonPaginator
 from lms.serializers import CourseSerializer, LessonSerializer, CourseSubscriptionSerializer
 from lms.permissions import IsNotModer, IsOwner, IsModerOrOwner
+from lms.tasks import send_course_update_email
 
 
 # GRUD для Курсов. Используем ViewSet (автоматически включает все операции)
@@ -50,6 +56,31 @@ class CourseViewSet(viewsets.ModelViewSet):
         """Метод вызывается только если пришел POST-запрос на создание нового курса"""
         # Автоматически сохраняем текущего пользователя как владельца
         serializer.save(owner=self.request.user)
+
+    def perform_update(self, serializer):
+        """
+        Вызывается автоматически при PUT и PATCH запросах для обновления курса.
+        """
+        # Сохраняем обновленные данные курса в базу
+        course = serializer.save()
+
+        # Логика отправки уведомлений (Задание 2 + Дополнительное задание)
+        now = timezone.now()
+
+        if course.last_update is None or (now - course.last_update) >= timedelta(hours=4):
+            # Находим email-адреса всех активных подписчиков этого курса
+            subscribers = CourseSubscription.objects.filter(course=course)
+            # Собираем их email-адреса с помощью генератора списков
+            student_emails = [sub.user.email for sub in subscribers if  sub.user.email]
+
+            # Если подписчики найдены — отправляем задачу асинхронно в Celery
+            if student_emails:
+                send_course_update_email.delay(course.title, student_emails)
+                print(f"[Django View] Задача на рассылку для курса '{course.title}' успешно отправлена в Celery.")
+            else:
+                print(f"[Django View] На курс '{course.title}' никто не подписан. Задача Celery не вызывалась.")
+        else:
+            print(f"[Django View] Курс '{course.title}' обновлялся менее 4 часов назад. Уведомление пропущено.")
 
 
 # Раздельный CRUD для Уроков через Generic-классы

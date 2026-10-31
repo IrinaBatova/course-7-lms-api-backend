@@ -7,7 +7,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 # Создание экземпляра объекта Celery
 app = Celery('config')
 
-# # Загрузка настроек из файла Django (конфигурируем Celery, используя префикс CELERY_ в settings.py)
+# Загрузка настроек из файла Django (конфигурируем Celery, используя префикс CELERY_ в settings.py)
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Автоматически ищем задачи в файлах tasks.py внутри приложений Django

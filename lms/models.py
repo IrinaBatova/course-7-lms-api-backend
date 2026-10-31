@@ -37,6 +37,10 @@ class Course (models.Model):
         default=1000,
         verbose_name='Цене курса'
     )
+    last_update = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Дата последнего обновления'
+    )
 
     class Meta:
         verbose_name = 'Курс'
