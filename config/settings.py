@@ -14,6 +14,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -119,7 +120,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
@@ -170,6 +171,9 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60), #  короткий рабочий ключ
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1), # долгосрочный ключ обновления сессии
+
+    # Включаем автоматическое обновление поля last_login при получении токена
+    'UPDATE_LAST_LOGIN': True,
 }
 
 # Базовые настройки Документации
@@ -185,10 +189,21 @@ SPECTACULAR_SETTINGS = {
 # URL-адрес брокера сообщений
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0')
 # URL-адрес брокера результатов, также Redis
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://127.0.0.1:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://127.0.0.1:6379/1')
 # Часовой пояс для работы Celery
-CELERY_TIMEZONE = "Europe/Moscow"  # Часовой пояс для корректного времени запуска задач
+CELERY_TIMEZONE = TIME_ZONE  # Часовой пояс для корректного времени запуска задач должен совпадать с Django
+# Запрещаем Celery внутренне переводить время в UTC
+CELERY_ENABLE_UTC = False
 # Флаг отслеживания выполнения задач
 CELERY_TASK_TRACK_STARTED = True
 # Максимальное время на выполнение задачи
 CELERY_TASK_TIME_LIMIT = 30 * 60
+# Настройки периодических задач Celery Beat
+CELERY_BEAT_SCHEDULE = {
+    'block_users_every_day': {
+        'task': 'users.tasks.block_inactive_users',
+        # 'schedule': timedelta(minutes=2),  # Запуск каждые 2 минуты для теста
+        'schedule': crontab(hour=0, minute=0),  # Запуск каждый день в полночь
+    },
+}
+

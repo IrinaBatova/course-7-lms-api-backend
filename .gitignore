@@ -38,3 +38,6 @@ python/
 catalog/static/catalog/css/bootstrap.min.css
 catalog/static/catalog/js/bootstrap.bundle.min.js
 /static
+
+# --- Локальная база данных расписания Celery Beat ---
+celerybeat-schedule*
