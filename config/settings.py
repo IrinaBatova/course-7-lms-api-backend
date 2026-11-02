@@ -11,8 +11,10 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -42,6 +44,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'django_filters',
+    'drf_spectacular',
+    'lms',
+    'users',
+    'payments',
 ]
 
 MIDDLEWARE = [
@@ -113,7 +120,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
@@ -122,15 +129,81 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
-
 STATIC_URL = 'static/'
 
 
-# Email
+# Настройки Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
-
 MAILERS = {
     'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        'BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
+        'OPTIONS': {
+            'host': 'smtp.mail.ru',
+            'port': 465,
+            'use_ssl': True,
+            'username': os.getenv('EMAIL_USER'), # Адрес почтового ящика, берем из .env
+            'password': os.getenv('EMAIL_PASSWORD'), # 16-значный ПАРОЛЬ ПРИЛОЖЕНИЯ без пробелов, берем из .env
+        },
+    }
+}
+
+DEFAULT_FROM_EMAIL = os.getenv('EMAIL_USER') # Должен совпадать с username выше
+
+# Старый формат для обратной совместимости библиотек
+# EMAIL_HOST_USER = os.getenv('EMAIL_USER')
+
+# Переключение с встроенного (базового) User из django.contrib.auth.models на кастомного User в приложении проекта Users
+AUTH_USER_MODEL = 'users.User'
+
+
+# Блок настроек для самого Django REST Framework, чтобы он знал, кто за что отвечает
+REST_FRAMEWORK = {
+    # Переключение с встроенной (базовой) системы сессий Django на JWT (JSON Web Tokens)
+    # Это указывает DRF проверять каждый входящий запрос на наличие токена в заголовках
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    # Теперь за генерацию схемы для Документации отвечает drf-spectacular
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# Дополнительные настройки времени жизни токенов (опционально, но полезно)
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60), #  короткий рабочий ключ
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1), # долгосрочный ключ обновления сессии
+
+    # Включаем автоматическое обновление поля last_login при получении токена
+    'UPDATE_LAST_LOGIN': True,
+}
+
+# Базовые настройки Документации
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Course LMS API Backend',
+    'DESCRIPTION': 'Серверная часть (API) для системы управления обучением (LMS)',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # Другие настройки можно добавить при необходимости
+}
+
+# Настройки для Celery
+# URL-адрес брокера сообщений
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0')
+# URL-адрес брокера результатов, также Redis
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://127.0.0.1:6379/1')
+# Часовой пояс для работы Celery
+CELERY_TIMEZONE = TIME_ZONE  # Часовой пояс для корректного времени запуска задач должен совпадать с Django
+# Запрещаем Celery внутренне переводить время в UTC
+CELERY_ENABLE_UTC = False
+# Флаг отслеживания выполнения задач
+CELERY_TASK_TRACK_STARTED = True
+# Максимальное время на выполнение задачи
+CELERY_TASK_TIME_LIMIT = 30 * 60
+# Настройки периодических задач Celery Beat
+CELERY_BEAT_SCHEDULE = {
+    'block_users_every_day': {
+        'task': 'users.tasks.block_inactive_users',
+        # 'schedule': timedelta(minutes=2),  # Запуск каждые 2 минуты для теста
+        'schedule': crontab(hour=0, minute=0),  # Запуск каждый день в полночь
     },
 }
+
