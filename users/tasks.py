@@ -1,7 +1,8 @@
 from datetime import timedelta
-from django.utils import timezone
-from django.contrib.auth import get_user_model
+
 from celery import shared_task
+from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -18,9 +19,7 @@ def block_inactive_users():
     # Ищем активных пользователей, у которых last_login был более 30 дней назад.
     # Фильтруем суперпользователей, чтобы случайно не заблокировать администратора.
     inactive_users = User.objects.filter(
-        last_login__lt=one_month_ago,
-        is_active=True,
-        is_superuser=False
+        last_login__lt=one_month_ago, is_active=True, is_superuser=False
     )
 
     # Считаем
@@ -31,4 +30,6 @@ def block_inactive_users():
         inactive_users.update(is_active=False)
         print(f"[Celery Beat] Успешно заблокировано {count} неактивных пользователей.")
     else:
-        print("[Celery Beat] Проверка завершена: неактивных пользователей не обнаружено.")
+        print(
+            "[Celery Beat] Проверка завершена: неактивных пользователей не обнаружено."
+        )

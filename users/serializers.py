@@ -1,9 +1,10 @@
-from  rest_framework import serializers
-from users.models import Payment
 from django.contrib.auth import get_user_model
+from rest_framework import serializers
 
+from users.models import Payment
 
 User = get_user_model()
+
 
 class UserSerializer(serializers.ModelSerializer):
     """
@@ -14,12 +15,15 @@ class UserSerializer(serializers.ModelSerializer):
     При создании пользователя автоматически вызывается метод 'create_user',
     который обеспечивает корректное хеширование пароля в базе данных.
     """
+
     class Meta:
         model = User
-        fields = ('id', 'email', 'password', 'first_name', 'last_name')
+        fields = ("id", "email", "password", "first_name", "last_name")
         # Безопасность
         extra_kwargs = {
-            'password': {'write_only': True}  # Чтобы пароль не возвращался в JSON-ответах
+            "password": {
+                "write_only": True
+            }  # Чтобы пароль не возвращался в JSON-ответах
         }
 
     def create(self, validated_data):
@@ -31,11 +35,13 @@ class UserSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
         return user
 
+
 class PaymentSerializer(serializers.ModelSerializer):
     """
     Сериализатор для объектов модели Payment (Платеж). Переводит все поля объекта в JSON (сериализация)
     и после проверки (валидация) обратно в Python (десериализация).
     """
+
     class Meta:
         model = Payment
-        fields = '__all__'
+        fields = "__all__"

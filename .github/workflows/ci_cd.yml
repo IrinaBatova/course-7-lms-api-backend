@@ -1,0 +1,155 @@
+# Название всего процесса (workflow), которое будет отображаться во вкладке Actions на GitHub
+name: Django CI/CD
+
+# События, которые запускают этот сценарий
+on:
+  # Запуск при отправке коммитов (git push) в ветки main или develop
+  push:
+    branches: [ main, develop ]
+  # Запуск при создании или обновлении Pull Request в ветки main или develop
+  pull_request:
+    branches: [ main, develop ]
+
+# Список задач (jobs), которые должен выполнить робот GitHub. Когда делаем git push, GitHub запускает у себя в облаке
+# собственный чистый сервер с операционной системой Ubuntu (ubuntu-latest). Именно на нём выполняются задачи
+# lint (проверка линтером) и test (прогон тестов). Причем для каждой отдельной задачи (job) GitHub запускает свою
+# собственную чистую виртуальную машину ubuntu-latest, а сразу после завершения задачи полностью уничтожает её.
+jobs:
+  # =====================================================================
+  # ЗАДАЧА 1: Проверка качества и стиля кода с помощью линтера Ruff
+  # =====================================================================
+  lint:
+    name: Code Quality (Ruff)
+    # Виртуальная машина GitHub (ubuntu-latest), на которой запускается проверка (свежая Ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      # Шаг 1: Скачиваем код из репозитория на машину GitHub Actions
+      # checkout@v4 это готовый плагин от разработчиков GitHub, официальная мини-программы (экшен), которая лежит в
+      # открытом доступе на GitHub Marketplace. Скачивать и устанавливать не нужно. Слово uses: говорит системе
+      # GitHub Actions самой подгрузить их во время запуска.
+      - uses: actions/checkout@v4
+
+      # Шаг 2: Устанавливаем нужную версию Python
+      - name: Set up Python
+        uses: actions/setup-python@v5 # тоже экшен
+        with:
+          python-version: '3.13'
+
+      # Шаг 3: Устанавливаем Poetry и все зависимости проекта из pyproject.toml
+      - name: Install Poetry and dependencies
+        run: |
+        # Устанавливаем сам poetry
+          pip install poetry
+        # Настраиваем config на установку всего прямо в основной Python системы
+          poetry config virtualenvs.create false # отмена создания папки .venv, потому что ubuntu-latest создается
+          # под одну задачу и сразу удаляется после её выполнения.
+          poetry install --no-interaction # устанавливаем библиотеки из pyproject.toml, --no-interaction без вопросов
+
+      # Шаг 4: Запускаем проверку стиля кода. Если есть ошибки — пайплайн остановится
+      - name: Run Ruff linter
+        run: ruff check .
+
+  # =====================================================================
+  # ЗАДАЧА 2: Запуск автоматических тестов Django с временной базой данных в контейнере
+  # =====================================================================
+  test:
+    name: Run Django Tests
+    runs-on: ubuntu-latest
+    # Запускаем тесты только после того, как успешно прошла задача lint
+    needs: lint
+
+    # Поднимаем временный Docker-контейнер с PostgreSQL специально для прогона тестов
+    services: # специальный раздел GitHub Actions для запуска фоновых программ
+      postgres: # произвольное имя сервиса внутри файла ci_cd.yml
+        image: postgres:18 # указываем какой готовый образ скачать из официального каталога Docker Hub.
+        env:
+          POSTGRES_DB: test_db # автоматически создать базу данных с именем test_db
+          POSTGRES_USER: postgres # создать суперпользователя с логином postgres
+          POSTGRES_PASSWORD: test_password # задать пароль для временных тестов можно использовать любой простой пароль
+        # Пробрасываем сетевой порт 5432 из закрытого контейнера на саму машину ubuntu-latest,
+        # чтобы Django-проект мог постучаться в базу по адресу localhost:5432
+        ports:
+          - 5432:5432
+        # Проверка готовности базы данных перед запуском тестов
+        options: >- # дополнительные параметры запуска контейнера (знак >- склеивает следующие строки в одну команду)
+        # Проверяем запустилась ли без ошибок БД встроенными утилитами PostgreSQL
+          --health-cmd pg_isready # проверка запуска БД
+          --health-interval 10s # повторять эту проверку каждые 10 секунд
+          --health-timeout 5s # ждать ответа от БД не дольше 5 секунд за одну попытку
+          --health-retries 5 # сделать максимум 5 попыток; если БД не ответит за это время, считать запуск проваленным
+
+    # Переменные окружения для тестового запуска (заменяют файл .env, его нет на GitHub). Названия должны совпадать.
+    env:
+      SECRET_KEY: django-insecure-test-key-for-github-actions # вымышленная тестовая строка
+      DEBUG: 'True'
+      ALLOWED_HOSTS: 127.0.0.1,localhost
+      DB_NAME: test_db # из блока services
+      DB_USER: postgres
+      DB_PASSWORD: test_password
+      DB_HOST: localhost
+      DB_PORT: 5432
+      STRIPE_SECRET_KEY: sk_test_placeholder # вымышленная тестовая строка
+      # Стандартные адреса подключения к локальному Redis, которые здесь работают как заглушки, чтобы Django смог
+      # спокойно запуститься без реального сервера Redis, если в тестах мы к Redis реально не подключаемся.
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      CELERY_RESULT_BACKEND: redis://localhost:6379/1
+
+    steps:
+      # Скачиваем код репозитория
+      - uses: actions/checkout@v4 # тоже экшен
+
+      # Устанавливаем Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      # Ставим Poetry и зависимости проекта
+      - name: Install Poetry and dependencies
+        run: |
+          pip install poetry
+          poetry config virtualenvs.create false
+          poetry install --no-interaction
+
+      # Накатываем миграции на временную базу и запускаем все тесты проекта
+      - name: Run migrations and tests
+        run: |
+          python manage.py migrate
+          python manage.py test
+
+  # =====================================================================
+  # ЗАДАЧА 3: Автоматический деплой (выкладка) на сервер в Яндекс Облаке
+  # =====================================================================
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    # Запускаем деплой только если все тесты в задаче test прошли успешно
+    needs: test
+    # Выкладываем код на сервер только при реальном push (при обычном Pull Request деплой не делаем)
+    if: github.event_name == 'push'
+
+    steps:
+      # Подключаемся к облачному серверу по SSH с помощью готового модуля appleboy/ssh-action
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          # Берём IP, логин и приватный ключ из зашифрованных секретов репозитория
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          # Команды, которые выполнятся на облачном сервере после успешного подключения
+          script: |
+          # Добавляем папку с установленным Poetry в системный путь PATH
+            export PATH="$HOME/.local/bin:$PATH"
+            # Переходим в папку вашего проекта на сервере
+            cd /home/ubuntu/course-7-lms-api-backend
+            # Скачиваем свежие изменения из той ветки, в которую был сделан push
+            git pull origin ${{ github.ref_name }}
+            # Устанавливаем новые зависимости, если они добавились в pyproject.toml
+            poetry install --no-interaction
+            # Применяем новые миграции к боевой базе данных PostgreSQL
+            poetry run python manage.py migrate
+            # Собираем обновлённые статические файлы для Nginx
+            poetry run python manage.py collectstatic --noinput
+            # Перезапускаем службу Gunicorn, чтобы сервер подхватил новый код
+            sudo systemctl restart gunicorn

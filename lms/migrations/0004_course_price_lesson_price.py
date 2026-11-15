@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('lms', '0003_coursesubscription'),
+        ("lms", "0003_coursesubscription"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='course',
-            name='price',
-            field=models.PositiveIntegerField(default=1000, verbose_name='Цене курса'),
+            model_name="course",
+            name="price",
+            field=models.PositiveIntegerField(default=1000, verbose_name="Цене курса"),
         ),
         migrations.AddField(
-            model_name='lesson',
-            name='price',
-            field=models.PositiveIntegerField(default=500, verbose_name='Цене урока'),
+            model_name="lesson",
+            name="price",
+            field=models.PositiveIntegerField(default=500, verbose_name="Цене урока"),
         ),
     ]
