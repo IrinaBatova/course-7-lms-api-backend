@@ -31,19 +31,21 @@ jobs:
 
       # Шаг 2: Устанавливаем нужную версию Python
       - name: Set up Python
-        uses: actions/setup-python@v5 # тоже экшен
+        # тоже экшен
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
       # Шаг 3: Устанавливаем Poetry и все зависимости проекта из pyproject.toml
       - name: Install Poetry and dependencies
-        run: |
-        # Устанавливаем сам poetry
+        run: |               
+          # Устанавливаем сам poetry
           pip install poetry
-        # Настраиваем config на установку всего прямо в основной Python системы
-          poetry config virtualenvs.create false # отмена создания папки .venv, потому что ubuntu-latest создается
-          # под одну задачу и сразу удаляется после её выполнения.
-          poetry install --no-interaction # устанавливаем библиотеки из pyproject.toml, --no-interaction без вопросов
+          # Настраиваем config на установку всего прямо в основной Python системы.
+          # Отмена создания папки .venv, т.к. ubuntu-latest создается под одну задачу и сразу удаляется после выполнения.
+          poetry config virtualenvs.create false 
+          # устанавливаем библиотеки из pyproject.toml, --no-interaction без вопросов
+          poetry install --no-interaction
 
       # Шаг 4: Запускаем проверку стиля кода. Если есть ошибки — пайплайн остановится
       - name: Run Ruff linter
@@ -71,12 +73,16 @@ jobs:
         ports:
           - 5432:5432
         # Проверка готовности базы данных перед запуском тестов
-        options: >- # дополнительные параметры запуска контейнера (знак >- склеивает следующие строки в одну команду)
-        # Проверяем запустилась ли без ошибок БД встроенными утилитами PostgreSQL
-          --health-cmd pg_isready # проверка запуска БД
-          --health-interval 10s # повторять эту проверку каждые 10 секунд
-          --health-timeout 5s # ждать ответа от БД не дольше 5 секунд за одну попытку
-          --health-retries 5 # сделать максимум 5 попыток; если БД не ответит за это время, считать запуск проваленным
+        # Дополнительные параметры контейнера (знак >- склеивает следующие строки в одну команду)
+        # --health-cmd pg_isready - проверка запуска БД встроенными утилитами PostgreSQL
+        # --health-interval 10s - повторять эту проверку каждые 10 секунд
+        # --health-timeout 5s - ждать ответа от БД не дольше 5 секунд за одну попытку
+        # --health-retries 5 - сделать максимум 5 попыток; если БД не ответит за это время, считать запуск проваленным
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     # Переменные окружения для тестового запуска (заменяют файл .env, его нет на GitHub). Названия должны совпадать.
     env:
@@ -95,8 +101,8 @@ jobs:
       CELERY_RESULT_BACKEND: redis://localhost:6379/1
 
     steps:
-      # Скачиваем код репозитория
-      - uses: actions/checkout@v4 # тоже экшен
+      # Скачиваем код репозитория (тоже экшен)
+      - uses: actions/checkout@v4
 
       # Устанавливаем Python
       - name: Set up Python
